@@ -15,11 +15,11 @@ from tornado.gen import coroutine
 logger = logging.getLogger('tornado.application')
 
 class CustomersHandler(tornado.web.RequestHandler):
-    
+
     def initialize(self):
         # Create db client
         self.client = MongoClient('mongodb', 27017)
-        
+
     def prepare(self):
         # Incorporate request JSON into arguments dictionary
         if self.request.body:
@@ -32,7 +32,7 @@ class CustomersHandler(tornado.web.RequestHandler):
     def on_finish(self):
         # Close db client
         self.client.close()
-    
+
     # post
     # expects: email address, order total as JSON payload data
     # returns: new customer rewards profile
@@ -51,8 +51,11 @@ class CustomersHandler(tornado.web.RequestHandler):
                 logger.warn(message)
                 return self.send_error(400, message=message) # return 400 when missing
             if 'orderTotal' in self.json_data:
-                order_total = self.json_data['orderTotal']
-                if not is_number(order_total):
+                try:
+                    if str(self.json_data['orderTotal']).lower() in ('nan', 'inf'):
+                        raise ValueError
+                    order_total = float(self.json_data['orderTotal'])
+                except ValueError:
                     message = 'ARGERROR: orderTotal not number.'
                     logger.warn(message)
                     return self.send_error(400, message=message) # return 400 when invalid
@@ -95,7 +98,7 @@ class CustomersHandler(tornado.web.RequestHandler):
         except:
             logger.error('POSTERROR: Error handling POST.')
             raise
-        
+
     # get
     # expects: email address as query string parameter
     # returns: customer rewards profile
@@ -152,8 +155,11 @@ class CustomersHandler(tornado.web.RequestHandler):
                 logger.warn(message)
                 return self.send_error(400, message=message) # return 400 when missing
             if 'orderTotal' in self.json_data:
-                order_total = self.json_data['orderTotal']
-                if not is_number(order_total):
+                try:
+                    if str(self.json_data['orderTotal']).lower() in ('nan', 'inf'):
+                        raise ValueError
+                    order_total = float(self.json_data['orderTotal'])
+                except ValueError:
                     message = 'ARGERROR: orderTotal not number.'
                     logger.warn(message)
                     return self.send_error(400, message=message) # return 400 when invalid
@@ -197,7 +203,7 @@ class CustomersHandler(tornado.web.RequestHandler):
         except:
             logger.error('PUTERROR: Error handling PUT.')
             raise
-        
+
     # delete
     # expects: email address as query string parameter
     # returns: deleted customer rewards profile
@@ -243,7 +249,7 @@ class CustomersHandler(tornado.web.RequestHandler):
         except:
             logger.error('DELETEERROR: Error handling DELETE.')
             raise
-        
+
 
 # is_email_address
 # expects: email address
@@ -255,17 +261,7 @@ def is_email_address(email_address):
     except:
         return False
 
-# is_number
-# expects: number
-# returns: True or False
-def is_number(num):
-    try:
-        #Simple test for number
-        return isinstance(num, (int, float))
-    except:
-        return False
 
-        
 #process_rewards
 # expects: customer rewards profile, order total
 # returns: customer rewards profile

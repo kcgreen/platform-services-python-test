@@ -94,13 +94,41 @@ class TestCustomerRewards1(AsyncTestCase):
             self.assertEqual(400, response.code)
         except:
             pass
+        # Invalid orderTotal (NaN)
+        try:
+            client = AsyncHTTPClient()
+            response =  yield client.fetch('http://rewardsservice:7050/customers',
+                                           method='POST',
+                                           headers={'content-type': 'application/json; charset=utf-8'},
+                                           body=json.dumps({'emailAddress': 'a.foo@bar.com', 'orderTotal': 'NaN'})
+                                           )
+            # Test response code
+            self.assertEqual(400, response.code)
+            # Test response data
+            self.assretEqual('', response.body['rewardsTier'])
+        except:
+            pass
+        # Invalid orderTotal (inf)
+        try:
+            client = AsyncHTTPClient()
+            response =  yield client.fetch('http://rewardsservice:7050/customers',
+                                           method='POST',
+                                           headers={'content-type': 'application/json; charset=utf-8'},
+                                           body=json.dumps({'emailAddress': 'a.foo@bar.com', 'orderTotal': 'inf'})
+                                           )
+            # Test response code
+            self.assertEqual(400, response.code)
+            # Test response data
+            self.assretEqual('', response.body['rewardsTier'])
+        except:
+            pass
         # Invalid orderTotal
         try:
             client = AsyncHTTPClient()
             response =  yield client.fetch('http://rewardsservice:7050/customers',
                                            method='POST',
                                            headers={'content-type': 'application/json; charset=utf-8'},
-                                           body=json.dumps({'emailAddress': 'a.foo@bar.com', 'orderTotal': '75'})
+                                           body=json.dumps({'emailAddress': 'a.foo@bar.com', 'orderTotal': 'abc.de'})
                                            )
             # Test response code
             self.assertEqual(400, response.code)
@@ -332,13 +360,41 @@ class TestCustomerRewards3(AsyncTestCase):
             self.assertEqual(400, response.code)
         except:
             pass
+        # Invalid orderTotal (NaN)
+        try:
+            client = AsyncHTTPClient()
+            response =  yield client.fetch('http://rewardsservice:7050/customers',
+                                           method='PUT',
+                                           headers={'content-type': 'application/json; charset=utf-8'},
+                                           body=json.dumps({'emailAddress': 'a.foo@bar.com', 'orderTotal': 'NaN'})
+                                           )
+            # Test response code
+            self.assertEqual(400, response.code)
+            # Test response data
+            self.assretEqual('', response.body['rewardsTier'])
+        except:
+            pass
+        # Invalid orderTotal (inf)
+        try:
+            client = AsyncHTTPClient()
+            response =  yield client.fetch('http://rewardsservice:7050/customers',
+                                           method='PUT',
+                                           headers={'content-type': 'application/json; charset=utf-8'},
+                                           body=json.dumps({'emailAddress': 'a.foo@bar.com', 'orderTotal': 'inf'})
+                                           )
+            # Test response code
+            self.assertEqual(400, response.code)
+            # Test response data
+            self.assretEqual('', response.body['rewardsTier'])
+        except:
+            pass
         # Invalid orderTotal
         try:
             client = AsyncHTTPClient()
             response =  yield client.fetch('http://rewardsservice:7050/customers',
                                            method='PUT',
                                            headers={'content-type': 'application/json; charset=utf-8'},
-                                           body=json.dumps({'emailAddress': 'a.foo@bar.com', 'orderTotal': '75'})
+                                           body=json.dumps({'emailAddress': 'a.foo@bar.com', 'orderTotal': 'uvx.yz'})
                                            )
             # Test response code
             self.assertEqual(400, response.code)
