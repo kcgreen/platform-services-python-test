@@ -101,7 +101,7 @@ class CustomersHandler(tornado.web.RequestHandler):
 
     # get
     # expects: email address as query string parameter
-    # returns: customer rewards profile
+    # returns: customer rewards profile in a list
     @coroutine
     def get(self):
         try:
@@ -121,18 +121,18 @@ class CustomersHandler(tornado.web.RequestHandler):
                     # Return one customer matching email address parameter
                     result = list(db.customers.find({'emailAddress' : email_address}, {'_id': 0}))
                     if len(result) > 0:
-                        customer = result[0]
+                        customer = result # customer = result[0]
                         logger.info(customer)
                         # Write customer
                         return self.write(json.dumps(customer))
                     else:
                         message = 'GETERROR: Customer not found.'
                         logger.info(message)
-                        return self.write(json.dumps({}))
+                        return self.write(json.dumps([]))
                 else:
                     message = 'GETERROR: No customers in database.'
                     logger.info(message)
-                    return self.write(json.dumps({}))
+                    return self.write(json.dumps([]))
         except:
             logger.error('GETERROR: Error handling GET.')
             raise
