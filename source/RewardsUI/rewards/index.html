@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <title>Rewards Dashboard</title>
+    <meta name="description" content="Using the Django Python web framework, create a Customer Rewards Dashboard that calls the RESTful endpoints created in RewardsService.">
+    <meta name="keywords" content="Rewards Service, RESTful, algorithm, Customer Rewards Dashboard, Add Orders, User Rewards, Urban Outfitters, Free People, Anthropologie, Terrain, BHLDN, Vetri Family">
+    <meta name="robots" content="index, follow">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- jQuery -->
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -74,7 +80,7 @@
     	// expects: nothing
     	// returns: nothing
     	function submitOrderCancel() {
-    		// Enable button again
+    		// Enable button again - just in case
     		if ($('input#submitOrder').prop('disabled')) {
 				$('input#submitOrder').prop('disabled', false);
     		}
@@ -230,7 +236,7 @@
     			
 				$('#customerTable tbody').hide();
 				$('#searchFoundNothing').hide();
-				$('#searchInProgress').fadeIn('fast');
+				$('#searchInProgress').show();
 				
 				// Ajax w/promises
 				$.ajax({
@@ -244,6 +250,7 @@
 					
 				})
 				.done(function(data, textStatus, jqXHR) {
+					// Clear table and rebuild
 					$('#customerTable').find('tr:gt(0)').remove();
 					if (jqXHR.status == 200) {
 						var customers = $.parseJSON(data);
@@ -284,13 +291,13 @@
 	                    	$('input:radio[name="delete_' + v.emailAddress + '"]').change(function(e) {
 	                    		// Put email address to be deleted in readonly field
 	                    		$('#emailAddressD').val(v.emailAddress);
+	                    		// Disable all radio buttons
+	                    		$("input[type=radio]").attr('disabled', true);
 	                    		// Hide add orders and show delete customer
 	                    		$('#addOrders').hide();
 	                    		$('#deleteCustomer').show();
 	                    		// Hide submit order update stuff
 	                    		submitOrderCancel();
-	                    		// Disable all radio buttons
-	                    		$("input[type=radio]").attr('disabled', true);
 	                    		// Focus on confirm email address
 	                    		$('#emailAddressC').focus();
 	                			return false;  
@@ -300,6 +307,11 @@
 						if (row > 0) {
 							$('#customerTable tbody').fadeIn('fast');
 						} else {
+		    				if (email_address != '') {
+		    					$('#searchFoundNothing').text('Customer ' + email_address + ' Not Found')
+		    				} else {
+		    					$('#searchFoundNothing').text('Customer Rewards Database Is Empty')
+		    				}
 							$('#searchFoundNothing').fadeIn('fast');
 						}
 					} else {
@@ -331,6 +343,10 @@
     	// expects: nothing
     	// returns: nothing
     	function deleteCancel() {
+    		// Enable button again - just in case
+    		if ($('input#deleteCustomer').prop('disabled')) {
+				$('input#deleteCustomer').prop('disabled', false);
+    		}
     		// Enable all radio buttons
     		$("input[type=radio]").attr('disabled', false);
 			// Get email for finding radio button 
@@ -355,8 +371,6 @@
     		// expects: error=true or false
     		// returns: nothing
 			function cleanup(error=false) {
-	    		// Enable all radio buttons
-	    		$("input[type=radio]").attr('disabled', false);
 	    		// Enable button again
 	    		if ($('input#deleteCustomer').prop('disabled')) {
     				$('input#deleteCustomer').prop('disabled', false);
@@ -365,6 +379,8 @@
 		    		// Clear email addresses
 		    		$('input[name="emailAddressD"]').val('');
 		    		$('input[name="emailAddressC"]').val('');
+		    		// Enable all radio buttons
+		    		$("input[type=radio]").attr('disabled', false);
 					// Hide delete customer and show add orders
 		    		$('#deleteCustomer').hide();
 		    		$('#addOrders').show();
@@ -438,18 +454,22 @@
 	    <div>
 	        <h2>Reward Tiers</h2>
 	        <table class="center" border="1">
+	        	<thead>
 	            <tr>
-	                <th>Rewards Tier<th>
+	                <th>Rewards Tier</th>
 	                <th>Reward Points</th>
 	                <th>Rewards Tier Name</th>
 	            </tr>
+	            </thead>
+	            <tbody>
 	            {% for reward in rewards_data %}
 	                <tr>
-	                    <td>{{ reward.tier }}<td>
+	                    <td>{{ reward.tier }}</td>
 	                    <td>{{ reward.points }}</td>
 	                    <td>{{ reward.rewardName }}</td>
 	                </tr>
 	            {% endfor %}
+	            </tbody>
 	        </table>
 	    </div>
 	</div>
