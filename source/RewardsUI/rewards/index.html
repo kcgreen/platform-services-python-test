@@ -68,6 +68,26 @@
     	function isOrderTotal(order_total='') {
     		return /^-?[0-9]+\.?[0-9]{0,2}$/.test(String(order_total));
     	}
+    	
+    	// submitOrderCancel
+    	// expects: nothing
+    	// returns: nothing
+    	function submitOrderCancel() {
+    		// Enable button again
+    		if ($('input#submitOrder').prop('disabled')) {
+				$('input#submitOrder').prop('disabled', false);
+    		}
+    		// Clear order text
+    		$('input[name="emailAddressA"]').val('');
+    		$('input[name="orderTotalA"]').val('');
+    		// Undo email address readonly field
+			$('#emailAddressA').prop('readonly', false);
+    		// Hide submit order cancel button
+			$('input#submitOrderCancel').hide();
+    		// Put focus on email address search
+			$('#emailAddressS').focus();
+			return false;
+    	}
     	// submitOrderClick
     	// expects: email address and order total fields
     	// returns: updates customer table on success
@@ -84,6 +104,10 @@
 		    		// Clear order text
 		    		$('input[name="emailAddressA"]').val('');
 		    		$('input[name="orderTotalA"]').val('');
+		    		// Undo email address readonly field
+					$('#emailAddressA').prop('readonly', false);
+		    		// Hide submit order cancel button
+					$('input#submitOrderCancel').hide();
 		    		// Rebuild table
    					search();
    				} else {
@@ -119,7 +143,7 @@
 				// Ajax w/promises
 	    		$.ajax({
 	    			url: 			'/customers/',
-	    			type:			'POST',
+	    			type:			$('input[name="emailAddressA"]').is('[readonly]') ? 'PUT' : 'POST',
 	    			data:			JSON.stringify(json_obj),
                     contentType:    'application/json; charset=utf-8',
                     dataType:       'json',
@@ -223,12 +247,11 @@
 					if (jqXHR.status == 200) {
 						var customers = $.parseJSON(data);
 						var row = 0
-						$.each(customers, function (i,v)
+						$.each(customers, function(i,v)
 						{
 							// console.log(i,v);
 							row += 1
-							var customerRow = $.parseHTML('<tr class="' + ((row%2) ? 'odd' : 'even') + 
-								'" id=' + v.emailAddress + '>' +
+							var customerRow = $.parseHTML('<tr class="' + ((row%2) ? 'odd' : 'even') + '" id=' + v.emailAddress + '" name=' + v.emailAddress + '>' +
 	                        		'<td class="c1 breakword">' + v.emailAddress + '</td>' +
 	                                '<td class="c2 breakword">' + v.rewardsPoints + '</td>' +
 	                                '<td class="c3 breakword">' + v.rewardsTier + '</td>' +
@@ -243,13 +266,28 @@
 	                                '</td>' +
 	                           	' </tr>');
 	                    	$('#customerTable tbody').append(customerRow)
+	                    	// Attach to table row an update handler
+	                    	$('tr[name="' + v.emailAddress + '"]').children(".c1, .c2, .c3, .c4, .c5, .c6, .c7").bind('click', function() {
+	                    		// Put email address to be updated in readonly field
+	                    		$('#emailAddressA').val(v.emailAddress);
+	                			$('#emailAddressA').prop('readonly', true);
+	                    		// Show submit order cancel button
+	                			$('input#submitOrderCancel').fadeIn('fast');
+	        					// Hide delete customer and show add orders
+	        		    		deleteCancel();
+	                    		// Focus on confirm email address
+	                    		$('#orderTotalA').focus();
+	                			return false;  
+	                    	});
 	                    	// Attach to radio button a delete handler
-	                    	$('input:radio[name="delete_' + v.emailAddress + '"]').change(function (e) {
+	                    	$('input:radio[name="delete_' + v.emailAddress + '"]').change(function(e) {
 	                    		// Put email address to be deleted in readonly field
 	                    		$('#emailAddressD').val(v.emailAddress);
 	                    		// Hide add orders and show delete customer
 	                    		$('#addOrders').hide();
-	                    		$('#deleteCustomer').fadeIn('fast');
+	                    		$('#deleteCustomer').show();
+	                    		// Hide submit order update stuff
+	                    		submitOrderCancel();
 	                    		// Disable all radio buttons
 	                    		$("input[type=radio]").attr('disabled', true);
 	                    		// Focus on confirm email address
@@ -298,11 +336,14 @@
     		var email_address = $('input[name="emailAddressD"]').val();
 			// Turn off radio button for this user
 			$('input[name="delete_' + email_address + '"]').prop('checked', false);
-			// Clear email address to be deleted
-			$('input[name="emailAddressD"]').val('');
+    		// Clear email addresses
+    		$('input[name="emailAddressD"]').val('');
+    		$('input[name="emailAddressC"]').val('');
 			// Hide delete customer and show add orders
     		$('#deleteCustomer').hide();
-    		$('#addOrders').fadeIn('fast');
+    		$('#addOrders').show();
+    		// Put focus on email address search
+			$('#emailAddressS').focus();
 			return false;
     	}
     	// deleteClick
@@ -325,7 +366,7 @@
 		    		$('input[name="emailAddressC"]').val('');
 					// Hide delete customer and show add orders
 		    		$('#deleteCustomer').hide();
-		    		$('#addOrders').fadeIn('fast');
+		    		$('#addOrders').show();
 		    		// Rebuild table
    					search();
    				} else {
@@ -420,6 +461,7 @@
 	            <input type="text" id="emailAddressA" name="emailAddressA"/><br>
 	            <label for="orderTotalA">Enter order total: </label>
 	            <input type="text" id="orderTotalA" name="orderTotalA"/><br>
+	            <input class="button hidden" type="button" id="submitOrderCancel" name="submitOrderCancel"value="Cancel"/>
 	            <input class="button" type="button" id="submitOrder" name="submitOrder"value="Submit Order"/>
             </div>
         </form>
@@ -470,6 +512,11 @@
     </div>			
     <script type=text/javascript>
     	$(function() {
+    		// Attach to submitOrderCancel button
+    		$('input#submitOrderCancel').on('click', function() {
+    			submitOrderCancel();
+    			return false;
+    		});
     		// Attach to submitOrder button
     		$('input#submitOrder').on('click', function() {
     			submitOrderClick();
@@ -491,7 +538,7 @@
     			return false;
     		});
     		// Trigger submitOrder for enter
-    		$('#emailAddressA').keypress(function (e) {
+    		$('#emailAddressA').keypress(function(e) {
     			var key = e.which;
     			if(key == 13) { // the enter key code
     				$('input[name = submitOrder]').click();
@@ -499,7 +546,7 @@
     			}
     		});
     		// Trigger submitOrder for enter
-    		$('#orderTotalA').keypress(function (e) {
+    		$('#orderTotalA').keypress(function(e) {
     			var key = e.which;
     			if(key == 13) { // the enter key code
     				$('input[name = submitOrder]').click();
@@ -507,7 +554,7 @@
     			}
     		});
     		// Trigger deleteCustomer for enter
-    		$('#emailAddressC').keypress(function (e) {
+    		$('#emailAddressC').keypress(function(e) {
     			var key = e.which;
     			if(key == 13) { // the enter key code
     				$('input[name = deleteCustomer]').click();
@@ -515,7 +562,7 @@
     			}
     		});
     		// Trigger search for enter
-    		$('#emailAddressS').keypress(function (e) {
+    		$('#emailAddressS').keypress(function(e) {
     			var key = e.which;
     			if(key == 13) { // the enter key code
     				$('input[name = search]').click();
