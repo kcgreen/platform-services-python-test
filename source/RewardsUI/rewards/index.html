@@ -19,9 +19,7 @@
 		              background: white; box-shadow: 0 1px 4px #BED1D4;
 		              border-radius: 2px; }
 		.smaller-box
-					{ width: 480px; margin: 30px auto; padding: 10px;
-		              background: white; box-shadow: 0 1px 4px #BED1D4;
-		              border-radius: 2px; }
+					{ width: 480px; margin: 30px auto; padding: 10px;}
 		.message    { padding: 3px 8px; color: #11557C;
 		              font-size: 0.9em; border-radius: 2px; }
 		.center		{ text-align: center; }
@@ -93,6 +91,7 @@
     				alert("Submit Order encountererd an error!");
    					$('input#submitOrder').focus();
    				}
+	    		return false;
 			}
 			
     		try {
@@ -196,6 +195,7 @@
        					$('#emailAddressS').focus();
     				}
     			}
+	    		return false;
 			}
     		try {
 	    		var params_obj = {};
@@ -243,6 +243,19 @@
 	                                '</td>' +
 	                           	' </tr>');
 	                    	$('#customerTable tbody').append(customerRow)
+	                    	// Attach to radio button a delete handler
+	                    	$('input:radio[name="delete_' + v.emailAddress + '"]').change(function (e) {
+	                    		// Put email address to be deleted in readonly field
+	                    		$('#emailAddressD').val(v.emailAddress);
+	                    		// Hide add orders and show delete customer
+	                    		$('#addOrders').hide();
+	                    		$('#deleteCustomer').fadeIn('fast');
+	                    		// Disable all radio buttons
+	                    		$("input[type=radio]").attr('disabled', true);
+	                    		// Focus on confirm email address
+	                    		$('#emailAddressC').focus();
+	                			return false;  
+	                		});
 						});
 						$('#searchInProgress').hide();
 						if (row > 0) {
@@ -274,10 +287,112 @@
 	    		cleanup(true);
     		}
     	}
+    	
+    	// deleteCancel
+    	// expects: nothing
+    	// returns: nothing
+    	function deleteCancel() {
+    		// Enable all radio buttons
+    		$("input[type=radio]").attr('disabled', false);
+			// Get email for finding radio button 
+    		var email_address = $('input[name="emailAddressD"]').val();
+			// Turn off radio button for this user
+			$('input[name="delete_' + email_address + '"]').prop('checked', false);
+			// Clear email address to be deleted
+			$('input[name="emailAddressD"]').val('');
+			// Hide delete customer and show add orders
+    		$('#deleteCustomer').hide();
+    		$('#addOrders').fadeIn('fast');
+			return false;
+    	}
+    	// deleteClick
+    	// expects: email address field
+    	// returns: updates customer table on success
+    	function deleteClick() {
+			// Post processing cleanup
+    		// expects: error=true or false
+    		// returns: nothing
+			function cleanup(error=false) {
+	    		// Enable all radio buttons
+	    		$("input[type=radio]").attr('disabled', false);
+	    		// Enable button again
+	    		if ($('input#deleteCustomer').prop('disabled')) {
+    				$('input#deleteCustomer').prop('disabled', false);
+	    		}
+	    		if (!error) {
+		    		// Clear email addresses
+		    		$('input[name="emailAddressD"]').val('');
+		    		$('input[name="emailAddressC"]').val('');
+					// Hide delete customer and show add orders
+		    		$('#deleteCustomer').hide();
+		    		$('#addOrders').fadeIn('fast');
+		    		// Rebuild table
+   					search();
+   				} else {
+    				// Noify user of error
+    				alert("Delete customer encountererd an error!");
+   					$('input#deleteCustomer').focus();
+   				}
+	    		return false;
+			}
+			
+    		try {
+    			// Disable button to prevent double submit
+    			$('input#deleteCustomer').prop('disabled', true);
+    			// Get query string parameter for customer deletion
+    			var email_address = $('input[name="emailAddressD"]').val();
+    			var email_address_confirmation = $('input[name="emailAddressC"]').val();
+				if (email_address != email_address_confirmation) {
+					alert("Customer email address does not match.");
+					$('#emailAddressC').focus();
+					$('input#deleteCustomer').prop('disabled', false);
+					return false;
+				}
+
+				console.log(email_address);
+	    		var params_obj = {};
+    			if (email_address != '') {
+    	    		params_obj["emailAddress"] = email_address;
+    			}
+				
+				// Ajax w/promises
+				$.ajax({
+					url: 			'/customers/?' + $.param(params_obj),
+					type:			'DELETE',
+					data:			{},
+			        contentType:    '',
+			        dataType:       '',
+			        async:          true,
+			        cache:          false
+					
+				})
+	    		.done(function(data, textStatus, jqXHR) {
+	    			if (jqXHR.status != 200) {
+						console.warn("Delete customer warning:\n" + 
+										"\warning:\t" + textStatus)
+					}
+					cleanup(jqXHR.status != 200);
+	    		})
+	    		.fail(function(jqXHR, error, errorThrown) {
+					console.error("Delete customer error:\n" + 
+							"\terror:\t" + errorThrown)
+					cleanup(true);
+	    		})
+				.always(function() {
+				});
+	    		
+	    		return false;
+    		}
+    		catch (e) {
+	    		console.error("Delete customer exception:\n" +
+						"\texception:\t" + e.message);
+				cleanup(true);
+    		}
+    	}
     </script>
 </head>
 <body>
-	<div class="box">
+	<div id="welcome" class="box">
     	<h1>Welcome to the Rewards Dashboard</h1>
 	    <div>
 	        <h2>Reward Tiers</h2>
@@ -297,7 +412,7 @@
 	        </table>
 	    </div>
 	</div>
-    <div class="box">
+    <div id="addOrders" class="box">
         <h2>Add orders</h2>
         <form>
         	<div class="smaller-box text">
@@ -309,7 +424,20 @@
             </div>
         </form>
     </div>
-    <div class="box">
+    <div id="deleteCustomer" class="box hidden">
+        <h2>Delete customer</h2>
+        <form>
+        	<div class="smaller-box text">
+	            <label for="emailAddressD">Selected customer: </label>
+	            <input type="text" id="emailAddressD" name="emailAddressD" readonly/><br>
+	            <label for="emailAddressC">Confirm customer: </label>
+	            <input type="text" id="emailAddressC" name="emailAddressC"/><br>
+	            <input class="button" type="button" id="deleteCustomerCancel" name="deleteCustomerCancel"value="Cancel"/>
+	            <input class="button" type="button" id="deleteCustomer" name="deleteCustomer"value="Delete Customer"/>
+            </div>
+        </form>
+    </div>
+    <div id="userRewards" class="box">
         <h2>User Rewards</h2>
         <form>
         	<div class="text">
@@ -352,6 +480,16 @@
     			searchClick();
     			return false;
     		});
+    		// Attach to deleteCustomerCancel button
+    		$('input#deleteCustomerCancel').on('click', function() {
+    			deleteCancel();
+    			return false;
+    		});
+    		// Attach to deleteCustomer button
+    		$('input#deleteCustomer').on('click', function() {
+    			deleteClick();
+    			return false;
+    		});
     		// Trigger submitOrder for enter
     		$('#emailAddressA').keypress(function (e) {
     			var key = e.which;
@@ -365,6 +503,14 @@
     			var key = e.which;
     			if(key == 13) { // the enter key code
     				$('input[name = submitOrder]').click();
+    				return false;  
+    			}
+    		});
+    		// Trigger deleteCustomer for enter
+    		$('#emailAddressC').keypress(function (e) {
+    			var key = e.which;
+    			if(key == 13) { // the enter key code
+    				$('input[name = deleteCustomer]').click();
     				return false;  
     			}
     		});
