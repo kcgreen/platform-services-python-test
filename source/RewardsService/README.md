@@ -41,3 +41,48 @@ Create RESTful endpoint(s) to calculate, store, and retrieve customer rewards da
 * $ docker-compose build
 * $ docker-compose up -d
 * Services are accessible at http://localhost:7050/
+
+>**Note**
+>
+>Using VirtualBox to host Docker? Make the following setup adjustments:
+>* In the `docker-compose.yaml` file, find `volumes:` and replace "`- ./data/db:/data/db`" with "`- /var/lib/boot2docker/my-mongodb-data/:/data/db`".
+>* Services are accessible from a browser at `http://w.x.y.z:7050/` where `w.x.y.z` is the address of the VirtualBox virtual machine.
+
+# Summary for RewardsService
+
+* Added url pattern for /customers endpoint:  [http://rewardsservice:7050/customers](http://localhost:7050/customers)
+* Added class CustomersHandler as tonado.web.RequestHandler:
+
+    Http Verb | Payload Data (JSON) (a)  | Result
+    --- | --- | --- |
+    POST | {'emailAddress': 'a.foo@bar.com',  'orderTotal': 74.99} |  Create One
+    PUT	 | {'emailAddress': 'a.foo@bar.com',  'orderTotal': '151.01'} |  Update One
+
+    (a) 'orderTotal' value can be number or number as a string (except: 'NaN' or 'inf').
+				 
+    Http Verb | Query String Parameter | Result
+    --- | --- | --- |
+    GET | ?emailAddress=a.foo@bar.com | Read One (b)
+    GET | | Read All (b)
+    DELETE | ?emailAddress=a.foo@bar.com | Delete One
+
+    (b) GET method always returns a JSON list of customer profiles: ` [{}, {}, ...]`
+
+* Created 'Customers' Mongo database with a "customers" collection for customer data:
+
+    ```
+    [
+        {"rewardsPoints": 643, "nextRewardsTierProgress": "0.57", "nextRewardsTier": "G", "rewardsTierName": "30% off purchase", "rewardsTier": "F", "emailAddress": "amy@foo.bar.net", "nextRewardsTierName": "35% off purchase"}, 
+        {"rewardsPoints": 175, "nextRewardsTierProgress": "0.25", "nextRewardsTier": "B", "rewardsTierName": "5% off purchase", "rewardsTier": "A", "emailAddress": "ann@foo.bar", "nextRewardsTierName": "10% off purchase"}, 
+        {"rewardsPoints": 599, "nextRewardsTierProgress": "0.01", "nextRewardsTier": "F", "rewardsTierName": "25% off purchase", "rewardsTier": "E", "emailAddress": "betty@foo.bar", "nextRewardsTierName": "30% off purchase"}, 
+        {"rewardsPoints": 200, "nextRewardsTierProgress": "1.00", "nextRewardsTier": "C", "rewardsTierName": "10% off purchase", "rewardsTier": "B", "emailAddress": "carly@foo.bar.net", "nextRewardsTierName": "15% off purchase"}, 
+        {"rewardsPoints": 137, "nextRewardsTierProgress": "0.63", "nextRewardsTier": "B", "rewardsTierName": "5% off purchase", "rewardsTier": "A", "emailAddress": "denise@foo.bar.com", "nextRewardsTierName": "10% off purchase"}, 
+        {"rewardsPoints": 1295, "nextRewardsTierProgress": "0.00", "nextRewardsTier": "", "rewardsTierName": "50% off purchase", "rewardsTier": "J", "emailAddress": "ellen@foo.bar", "nextRewardsTierName": ""}, 
+        {"rewardsPoints": 0, "nextRewardsTierProgress": "1.00", "nextRewardsTier": "A", "rewardsTierName": "", "rewardsTier": "", "emailAddress": "fran@foo.bar", "nextRewardsTierName": "5% off purchase"}, 
+        {"rewardsPoints": 123, "nextRewardsTierProgress": "0.77", "nextRewardsTier": "B", "rewardsTierName": "5% off purchase", "rewardsTier": "A", "emailAddress": "gina@foo.bar.net", "nextRewardsTierName": "10% off purchase"}, 
+        {"rewardsPoints": 249, "nextRewardsTierProgress": "0.51", "nextRewardsTier": "C", "rewardsTierName": "10% off purchase", "rewardsTier": "B", "emailAddress": "hellen@foo.bar", "nextRewardsTierName": "15% off purchase"}, 
+        {"rewardsPoints": 683, "nextRewardsTierProgress": "0.17", "nextRewardsTier": "G", "rewardsTierName": "30% off purchase", "rewardsTier": "F", "emailAddress": "isabella@foo.bar.com", "nextRewardsTierName": "35% off purchase"}, 
+        {"rewardsPoints": 79, "nextRewardsTierProgress": "0.21", "nextRewardsTier": "A", "rewardsTierName": "", "rewardsTier": "", "emailAddress": "jan@foo.bar.foo.bar.com", "nextRewardsTierName": "5% off purchase"}, 
+        {"rewardsPoints": 243, "nextRewardsTierProgress": "0.57", "nextRewardsTier": "C", "rewardsTierName": "10% off purchase", "rewardsTier": "B", "emailAddress": "katie@foo.bar.foo.bar.foo.bar.net", "nextRewardsTierName": "15% off purchase"}
+    ]
+    ```
